@@ -6,7 +6,7 @@
 /*   By: mroux <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/11/04 13:19:41 by mroux             #+#    #+#             */
-/*   Updated: 2019/11/13 13:50:17 by mroux            ###   ########.fr       */
+/*   Updated: 2019/11/19 09:51:35 by mroux            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,44 +49,46 @@ char	*ft_strnjoin(char *s1, char const *s2, size_t n)
 	return (ret);
 }
 
-int		find_line(char *buffer, size_t buflen, size_t pos, size_t *ln)
+int		find_line(t_fl *fl)
 {
-	*ln = 0;
-	if (buflen == 0)
-		return (0);
-	if (pos + *ln >= buflen)
-		return (0);
-	while (buffer[pos + *ln] != '\n')
+	int	ln;
+
+	ln = 0;
+	if (fl->bytes_read == 0)
+		return (-1);
+	while (fl->buffer[fl->pos + ln] != '\n')
 	{
-		if (pos + *ln == buflen)
-			return (0);
-		(*ln)++;
+		if (fl->pos + ln + 1 == fl->bytes_read)
+			return (-1);
+		ln++;
 	}
+	return (ln);
+}
+
+int		init(t_fl *fl, int fd, char **line)
+{
+	size_t	buff_size;
+
+	if (BUFFER_SIZE == 0)
+		return (0);
+	buff_size = BUFFER_SIZE;
+	fl->fd = fd;
+	if (fl->buffer == 0)
+	{
+		if (!(fl->buffer = (char *)malloc(buff_size * sizeof(char))))
+			return (0);
+	}
+	if (line == 0 || !(*line = (char *)malloc(1 * sizeof(char))))
+		return (0);
+	(*line)[0] = 0;
 	return (1);
 }
 
-char	*init(char **buffer, int fd, int *bytes_read)
+int		reinit(t_fl *fl)
 {
-	size_t	buff_size;
-	char	*ret;
-
-	buff_size = BUFFER_SIZE;
-	if (*buffer == 0)
-	{
-		if (!(*buffer = (char *)malloc(buff_size * sizeof(char))))
-			return (NULL);
-		if ((*bytes_read = read(fd, *buffer, BUFFER_SIZE)) == -1)
-			return (NULL);
-	}
-	if (!(ret = (char *)malloc(1 * sizeof(char))))
-		return (NULL);
-	return (ret);
-}
-
-int		reinit(char **buffer, size_t *pos, int *bytes_read)
-{
-	**buffer = 0;
-	*pos = 0;
-	*bytes_read = 0;
+	free(fl->buffer);
+	fl->buffer = 0;
+	fl->pos = 0;
+	fl->bytes_read = 0;
 	return (0);
 }

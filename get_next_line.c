@@ -6,33 +6,35 @@
 /*   By: mroux <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/11/07 11:06:08 by mroux             #+#    #+#             */
-/*   Updated: 2019/11/13 13:51:47 by mroux            ###   ########.fr       */
+/*   Updated: 2019/11/19 09:51:16 by mroux            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
+#include <stdio.h>
 
 int		get_next_line(int fd, char **line)
 {
-	static char		*buffer = 0;
-	static size_t	pos = 0;
-	static int		bytes_read = 0;
-	size_t			ln;
+	static t_fl		fl;
+	int				ln;
 
 	ln = 0;
-	if (line == 0 || (*line = init(&buffer, fd, &bytes_read)) == NULL)
+	if (init(&fl, fd, line) == 0)
 		return (-1);
-	while (find_line(buffer, bytes_read, pos, &ln) == 0)
+	if (fl.pos == 0 &&
+		(fl.bytes_read = read(fl.fd, fl.buffer, BUFFER_SIZE)) <= 0)
+		return (fl.bytes_read);
+	while ((ln = find_line(&fl)) == -1)
 	{
-		*line = ft_strnjoin(*line, &buffer[pos], ln);
-		pos = 0;
-		if ((bytes_read = read(fd, buffer, BUFFER_SIZE)) <= 0)
+		*line = ft_strnjoin(*line, fl.buffer + fl.pos, fl.bytes_read - fl.pos);
+		fl.pos = 0;
+		if ((fl.bytes_read = read(fl.fd, fl.buffer, BUFFER_SIZE)) <= 0)
 		{
-			reinit(&buffer, &pos, &bytes_read);
-			return (bytes_read);
+			reinit(&fl);
+			return (fl.bytes_read);
 		}
 	}
-	*line = ft_strnjoin(*line, &buffer[pos], ln);
-	pos += ln + 1;
+	*line = ft_strnjoin(*line, fl.buffer + fl.pos, ln);
+	fl.pos = (fl.pos + ln + 1 >= fl.bytes_read) ? 0 : fl.pos + ln + 1;
 	return (1);
 }
